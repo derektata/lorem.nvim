@@ -49,4 +49,4 @@ It doesn't take in a number (while in insert mode) and print an exact amount of 
 ## Disclaimer
 I'm a noob at writing neovim plugins, any tips on this would be greatly appreciated!
 
-I only wrote this because I wanted a faster way of inserting dummy text, instead of working through a several dialog prompts.
+I only wrote this because I wanted a faster way of inserting dummy text, instead of working through several dialog prompts.
