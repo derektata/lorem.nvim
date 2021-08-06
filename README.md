@@ -1,4 +1,4 @@
-# lorem-nvim
+# lorem.nvim
 
 A simple wrapper that adds a `lorem` keybind to insert mode, and types out placeholder text like in VS Code.
 
