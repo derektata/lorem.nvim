@@ -1,5 +1,3 @@
--- TODO Read lorem{n} (n = number) in insert mode
--- Idea: LSP to read lorem and execute :Loremipsum {n} asynchronously?
 
 local vim = vim
 local cmd = vim.cmd
