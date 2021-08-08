@@ -17,13 +17,21 @@ Packer:
         requires = 'vim-scripts/loremipsum'
      }
 
-<br>
+Vim-Plug:
 
+    Plug 'derektata/lorem.nvim'
+    Plug 'vim-scripts/loremipsum'
 
 ## Setup
 init.lua:
     
     require"lorem-nvim".setup()
+
+init.vim:
+
+    lua <<EOF
+    require'lorem-nvim'.setup()
+    EOF
 
 <br>
 
