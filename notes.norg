@@ -1,0 +1,5 @@
+* TODO List
+- [x] Check Vim-Plug installation
+- [x] + update docs
+- [*] Read lorem{n} (n = number) in insert mode
+   '-> Idea: completion-nvim to read lorem and execute :Loremipsum {n} asynchronously?
