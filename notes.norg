@@ -3,3 +3,4 @@
 - [x] + update docs
 - [*] Read lorem{n} (n = number) in insert mode
    '-> Idea: completion-nvim to read lorem and execute :Loremipsum {n} asynchronously?
+   '-> Hacky solution: `lorem` insert mode binding to prompt how many words
