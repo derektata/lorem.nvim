@@ -1,60 +1,35 @@
 # lorem.nvim
 
-A simple wrapper that adds a `lorem` keybind to insert mode, and types out placeholder text like in VS Code.
+Easily generate dummy text in Neovim
 
-![lorem](./_examples/lorem.gif)
+## currently under maintenance 🧰
 
-<br>
+### Todo List
+- [X] - Generate words from another file
+- [X] - Create ':LoremIpsum' command w/ args
+- [ ] - Integrate with completion engine (nvim-cmp)
 
-
-
-## Installation
-
+### Installation
 Packer:
+```lua
+use { "derektata/lorem.nvim" }
+```
 
-    use { 
-        'derektata/lorem.nvim',
-        requires = 'vim-scripts/loremipsum'
-     }
+### Usage
+#### in the editor:
+```text
+# default: 100
+:LoremIpsum <number_of_words>
 
-Vim-Plug:
+# i.e.
+:LoremIpsum 750
+```
 
-    Plug 'derektata/lorem.nvim'
-    Plug 'vim-scripts/loremipsum'
+#### headless mode:
+```bash
+# print lorem ipsum words to the terminal (default: 100)
+nvim --headless +'lua print(require("lorem").gen_words())' +q
 
-## Setup
-init.lua:
-    
-    require"lorem-nvim".setup()
-
-init.vim:
-
-    lua <<EOF
-    require'lorem-nvim'.setup()
-    EOF
-
-<br>
-
-## Usage
-
-| Command | Mode   | Description                               |
-|---------|--------|-------------------------------------------|
-| `lorem` | insert | inserts placeholder text                  |
-| `LI`    | normal | prompts user for how many words to insert |
-
-
-<br>
-
-## What this plugin doesn't do...yet 
-It doesn't take in a number (while in insert mode) and print an exact amount of words specified.
-    
-- However, that's why the prompt exists...
-
-    ![](./_examples/lorem-prompt.gif)
-
-<br>
-
-## Disclaimer
-I'm a noob at writing neovim plugins, any tips on this would be greatly appreciated!
-
-I only wrote this because I wanted a faster way of inserting dummy text, instead of working through several dialog prompts.
+# print 500 words in the terminal
+nvim --headless +'lua print(require("lorem").gen_words(500))' +q
+```
