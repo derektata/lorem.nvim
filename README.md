@@ -27,9 +27,14 @@ use { "derektata/lorem.nvim" }
 
 #### headless mode:
 ```bash
-# print lorem ipsum words to the terminal (default: 100)
-nvim --headless +'lua print(require("lorem").gen_words())' +q
+# print lorem ipsum words to the terminal 
+# (default: 100)
+nvim --headless \
+  +'lua print(require("lorem").gen_words())' \
+  +q
 
-# print 500 words in the terminal
-nvim --headless +'lua print(require("lorem").gen_words(500))' +q
+# print 500 words to the terminal
+nvim --headless \
+  +'lua print(require("lorem").gen_words(500))' \
+  +q
 ```
