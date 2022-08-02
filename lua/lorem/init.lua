@@ -45,9 +45,4 @@ end
 -- source.complete = function(self, params, callback)
 -- end
 
-vim.api.nvim_create_user_command("LoremIpsum", function(opts)
-  local number = tonumber(opts.args)
-  vim.api.nvim_paste(source.gen_words(number), {}, -1)
-end, { nargs = "*" })
-
 return source
