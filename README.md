@@ -15,6 +15,12 @@ Packer:
 use { "derektata/lorem.nvim" }
 ```
 
+### Configuration
+as of right now, no setup function is needed.
+
+you should only need to install the plugin, and the 
+':LoremIpsum' command will be immediately available
+
 ### Usage
 #### in the editor:
 ```text
