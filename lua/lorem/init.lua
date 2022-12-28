@@ -14,28 +14,21 @@ source.get_keyword_pattern = function()
 end
 
 source.gen_words = function(number)
-  local words = require "lorem.ipsum"
-  local defaultLen = 100
+  local words = require "lorem.ipsum" ()
+  local length = 100
+
+  if number ~= nil then
+    length = number
+  end
+
   local output = ""
 
-  if number == nil then
-    for i = 1, defaultLen do
-      output = output .. words()[i] .. " "
-    end
-  elseif number > 500 then
-    while number > 500 do
-      for i = 1, 500 do
-        output = output .. words()[i] .. " "
-      end
-      number = number - 500
-    end
-    for i = 1, number do
-      output = output .. words()[i] .. " "
-    end
-  else
-    for i = 1, number do
-      output = output .. words()[i] .. " "
-    end
+  -- Initialize the pseudo random number generator
+  math.randomseed( os.time() )
+  math.random(); math.random(); math.random()
+
+  for i = 1, length do
+    output = output .. words[math.random(1, #words)] .. " "
   end
 
   return output
