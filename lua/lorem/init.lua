@@ -16,8 +16,8 @@ math.random(); math.random(); math.random()
 
 
 source.new = function()
-  local self = setmetatable({}, { __index = source })
-  return self
+	local self = setmetatable({}, { __index = source })
+	return self
 end
 
 source.setup = function(config)
@@ -25,30 +25,30 @@ source.setup = function(config)
 end
 
 source.get_trigger_characters = function()
-  return { "lorem" }
+	return { "lorem" }
 end
 
 source.get_keyword_pattern = function()
-  return "^lorem%s+(%d+)$"
+	return "^lorem%s+(%d+)$"
 end
 
 source.gen_sentence = function(length)
-  local words = require "lorem.ipsum" ()
+	local words = require "lorem.ipsum" ()
 
-  local output = ""
+	local output = ""
 
-  for i = 1, length do
-    output = output .. words[math.random(1, #words)] .. " "
-  end
+	for i = 1, length do
+		output = output .. words[math.random(1, #words)] .. " "
+	end
 
-  -- Format by:
-  --	Capitalizing the first letter of the string
-  --	Removing the last space
-  --	Add a dot
-  output = (output:gsub("^%l", string.upper))
-  output = output:sub(1, -2) .. "."
+	-- Format by:
+	--	Capitalizing the first letter of the string
+	--	Removing the last space
+	--	Add a dot
+	output = (output:gsub("^%l", string.upper))
+	output = output:sub(1, -2) .. "."
 
-  return output
+	return output
 end
 
 source.gen_words = function(length)
