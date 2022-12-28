@@ -1,5 +1,5 @@
 local source = {}
-local _config = { sentenceLength = "mixedShort" }
+local _config = { sentenceLength = "mixedShort", comma = 0.1 }
 
 local sentenceLengths = {
 	mixed		= {3, 100},
@@ -37,8 +37,15 @@ source.gen_sentence = function(length)
 
 	local output = ""
 
+	-- Index of the last comma added to the sentence
+	local lastComma = 0
 	for i = 1, length do
 		output = output .. words[math.random(1, #words)] .. " "
+
+		if ((i - lastComma) > 2 and _config["comma"] and math.random() < _config["comma"]) then
+			output = output:sub(1, -2) .. ", "
+			lastComma = i
+		end
 	end
 
 	-- Format by:
