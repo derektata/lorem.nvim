@@ -31,6 +31,13 @@ source.gen_words = function(number)
     output = output .. words[math.random(1, #words)] .. " "
   end
 
+  -- Format by:
+  --	Capitalizing the first letter of the string
+  --	Removing the last space
+  --	Add a dot
+  output = (output:gsub("^%l", string.upper))
+  output = output:sub(1, -2) .. "."
+
   return output
 end
 
