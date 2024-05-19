@@ -4,10 +4,10 @@ local _config = { sentenceLength = "mixedShort", comma = 0.1 }
 local sentenceLengths = {
   mixed = { 3, 100 },
   mixedLong = { 30, 100 },
-  mixedShort = { 3, 30 },
+  mixedShort = { 1, 30 },
   long = { 40, 60 },
   medium = { 20, 40 },
-  short = { 3, 20 },
+  short = { 1, 20 },
 }
 
 -- Initialize the pseudo random number generator
@@ -79,8 +79,16 @@ source.gen_words = function(length)
   end
 
   local remainingSpace = length - textLength
-  if remainingSpace > 2 then
-    text = text .. source.gen_sentence(remainingSpace)
+  if remainingSpace > 0 then
+    if remainingSpace < lowerBound then
+      -- Generate exactly the number of words needed
+      for i = 1, remainingSpace do
+        text = text .. require("lorem.ipsum")()[math.random(1, #require("lorem.ipsum")())] .. " "
+      end
+      text = text:sub(1, -2) .. "."
+    else
+      text = text .. source.gen_sentence(remainingSpace)
+    end
   end
 
   return text
