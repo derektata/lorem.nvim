@@ -56,7 +56,10 @@ require('lorem').setup({
 -- or
 
 require('lorem').setup({
-    sentenceLength = {words_per_sentence = 8, sentences_per_paragraph = 6},  -- custom configuration
+    sentenceLength = { -- custom configuration
+      words_per_sentence = 8,
+      sentences_per_paragraph = 6
+    },
     comma_chance = 0.3,  -- 30% chance to insert a comma
     max_commas_per_sentence = 2  -- maximum 2 commas per sentence
 })
