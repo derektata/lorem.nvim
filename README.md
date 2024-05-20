@@ -5,61 +5,118 @@ Easily generate dummy text in Neovim
 ## currently under maintenance 🧰
 
 ### Todo List
-- [X] - Generate words from another file
-- [X] - Create ':LoremIpsum' command w/ args
+
+- [x] - Generate words from another file
+- [x] - Create ':LoremIpsum' command w/ args
 - [ ] - Integrate with completion engine (nvim-cmp)
 
 ### Installation
-Packer:
+
+#### Packer:
+
 ```lua
-use { "derektata/lorem.nvim" }
+use {
+  'derektata/lorem.nvim',
+  config = function()
+    require('lorem').setup({
+      sentenceLength = "medium",
+      comma_chance = 0.2,
+      max_commas_per_sentence = 2,
+    })
+  end
+}
+```
+
+#### Lazy:
+
+```lua
+return {
+  'derektata/lorem.nvim',
+  config = function()
+      require('lorem').setup({
+          sentenceLength = "medium",
+          comma_chance = 0.2,
+          max_commas_per_sentence = 2,
+      })
+  end
+}
 ```
 
 ### Configuration
+
 The plugin is designed to be as plug-and-play as possible, and therefore no setup is needed as it is shipped with sensible defaults. It is hovewer possible to customize the behavior of the plugin in setup like this:
 
 ```lua
 require('lorem').setup({
-  sentenceLength = "mixedShort",
-  comma = 0.1
+    sentenceLength = "mixed",  -- using a default configuration
+    comma_chance = 0.3,  -- 30% chance to insert a comma
+    max_commas_per_sentence = 2  -- maximum 2 commas per sentence
+})
+
+-- or
+
+require('lorem').setup({
+    sentenceLength = {words_per_sentence = 8, sentences_per_paragraph = 6},  -- custom configuration
+    comma_chance = 0.3,  -- 30% chance to insert a comma
+    max_commas_per_sentence = 2  -- maximum 2 commas per sentence
 })
 ```
 
-#### The comma property
-This property describes the likelihood of having a comma added to a sentence when there has passed at least 3 words since the last comma. A value of 0 would completely disable commas, and a value of 1 would make it so that there would be a comma every third word
+#### The comma_chance property
+
+This property controls the likelihood of inserting a comma after a word within a sentence. This property allows for the generation of more natural-looking text by adding occasional commas, mimicking the natural pauses in human writing.
 
 #### The sentenceLength property
+
 This property determines the intervals for how long the sentences of latin words should be before ending them with a period. The following values are available:
 
-|  **Value**  | **Lower Bound** 	| **Upper Bound** 	|
-|:----------:	|:---------------:	|:---------------:	|
-| mixed      	| 3               	| 100             	|
-| mixedLong  	| 30              	| 100             	|
-| mixedShort 	| 3               	| 30              	|
-| long       	| 40              	| 60              	|
-| medium     	| 20              	| 40              	|
-| short      	| 3               	| 20              	|
+#### The max_commas_per_sentence property
+
+This property sets the maximum number of commas that can be inserted in a single sentence. This property ensures that sentences do not become overly complex or cluttered with too many commas, maintaining readability and natural flow.
+
+| **Value**  | **Words Per Sentence** | **Sentences Per Paragraph** |
+| :--------: | :--------------------: | :-------------------------: |
+|   short    |           5            |              3              |
+|   medium   |           10           |              5              |
+|    long    |           14           |              7              |
+| mixedShort |           8            |              4              |
+|   mixed    |           12           |              6              |
+| mixedLong  |           16           |              8              |
 
 ### Usage
+
 #### in the editor:
+
 ```text
 # default: 100
-:LoremIpsum <number_of_words>
+:LoremIpsum <number_of_words> <mode>
+
+                ┌─────────────────┐
+                │┌───────────────┐│
+                ││     words     ││
+                │└───────────────┘│
+                *******************
+                │┌───────────────┐│
+                ││  paragraphs   ││
+                │└───────────────┘│
+                └─────────────────┘
+┌────────────────────┐
+│:LoremIspum 10 <Tab>│
+└────────────────────┘
 
 # i.e.
-:LoremIpsum 750
+:LoremIpsum 1000 words
+:LoremIpsum 2 paragraphs
+:LoremIpsum 3 paragraphs 8 6  -- Generate 3 paragraphs, each with 6 sentences, each sentence with 8 words
 ```
 
 #### headless mode:
+
 ```bash
-# print lorem ipsum words to the terminal 
+# print lorem ipsum words to the terminal
 # (default: 100)
-nvim --headless \
-  +'lua print(require("lorem").gen_words())' \
-  +q
+nvim --headless -c 'lua print(require("lorem").gen_words())' +qall | tail -n +1
 
 # print 500 words to the terminal
-nvim --headless \
-  +'lua print(require("lorem").gen_words(500))' \
-  +q
+nvim --headless -c 'lua print(require("lorem").gen_words(500))' +qall | tail -n +1
 ```
