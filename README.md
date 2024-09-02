@@ -92,20 +92,18 @@ This property sets the maximum number of commas that can be inserted in a single
 
 ```text
 # default: 100
-:LoremIpsum <number_of_words> <mode>
+:LoremIpsum <mode> <number_of_words>
 
-                ┌─────────────────┐
-                │┌───────────────┐│
-                ││     words     ││
-                │└───────────────┘│
-                *******************
-                │┌───────────────┐│
-                ││  paragraphs   ││
-                │└───────────────┘│
-                └─────────────────┘
-┌────────────────────┐
-│:LoremIspum 10 <Tab>│
-└────────────────────┘
+                          ┌────────────┐        
+                          │            │        
+                          │    Menu    │        
+                          │depending on│        
+            ┌────────────┐│  previous  │        
+            │   words    ││ selection  │        
+            │ paragraphs ││            │        
+            └────────────┘└────────────┘        
+────────────────────────────────────────────────
+:LoremIpsum     <TAB>         <TAB>             
 
 # i.e.
 :LoremIpsum 1000 words
