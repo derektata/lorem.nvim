@@ -1,3 +1,4 @@
+-- @module lorem
 local M = {}
 
 -- Default configuration
@@ -138,50 +139,80 @@ function M.gen_words(number)
   return M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
 end
 
---@param arg_lead string
---@param cmd_line string
---@param cursor_pos number
---@return table
-local function format_completion(arg_lead, cmd_line, cursor_pos)
-  return { "words", "paragraphs" }
-end
-
---@return nil
-function M.create_command()
-  vim.api.nvim_create_user_command("LoremIpsum", function(opts)
-    local args = vim.split(opts.args, " ")
-    local number = tonumber(args[1]) or 100
-    local format = args[2] or "words"
-
-    -- Validate format
-    if format ~= "words" and format ~= "paragraphs" then
-      error "Invalid format. Use 'words' or 'paragraphs'."
+--- Filter options based on a prefix.
+-- @param options table<string>: The list of options to filter.
+-- @param prefix string: The prefix to filter by.
+-- @return table<string>: The filtered options.
+local function filter_opts(options, prefix)
+  local filtered_opts = {}
+  for _, opt in ipairs(options) do
+    if opt:find("^" .. prefix) then
+      table.insert(filtered_opts, opt)
     end
-
-    -- Get the sentence length configuration
-    local sentence_config = get_sentence_config()
-
-    -- Use custom values if provided, otherwise use the defaults
-    local words_per_sentence = tonumber(args[3]) or sentence_config.words_per_sentence
-    local sentences_per_paragraph = tonumber(args[4]) or sentence_config.sentences_per_paragraph
-    local comma_chance = _config.comma_chance
-    local max_commas = _config.max_commas_per_sentence
-
-    local text =
-      M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
-    local lines = vim.split(text, "\n")
-
-    -- Get the current buffer
-    local buf = vim.api.nvim_get_current_buf()
-    -- Get the current cursor position
-    local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-
-    -- Insert the text at the current cursor position
-    vim.api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
-  end, {
-    nargs = "?",
-    complete = format_completion,
-  })
+  end
+  return filtered_opts
 end
 
-return M
+--- Provide autocomplete suggestions for the LoremIpsum command.
+-- @param arg_lead string: The leading part of the current argument.
+-- @param cmd_line string: The entire command line.
+-- @param cursor_pos number: The position of the cursor in the command line.
+-- @return table<string>: A list of suggestions based on the input.
+function M.format_completion(arg_lead, cmd_line, cursor_pos)
+  local args = vim.split(cmd_line, "%s+")
+  if #args == 2 then
+    return filter_opts({ "words", "paragraphs" }, arg_lead)
+  elseif #args == 3 then
+    local textType = args[2]
+    local options = {
+      words = { "10", "20", "50", "100" },
+      paragraphs = { "1", "2", "3", "5" },
+    }
+    return filter_opts(options[textType] or {}, arg_lead)
+  end
+end
+
+--- Create the "LoremIpsum" user command.
+-- @param opts table: The options table provided by Neovim for user commands.
+-- @return nil
+vim.api.nvim_create_user_command("LoremIpsum", function(opts)
+  local args = vim.split(opts.args, " ")
+
+  -- Ensure there are at least 2 arguments
+  if #args < 2 then
+    print "Invalid number of arguments. Usage: LoremIpsum <words|paragraphs> amount>"
+    return
+  end
+
+  local format = args[1] or "words"
+  local number = tonumber(args[2]) or 100
+
+  -- Validate format
+  if format ~= "words" and format ~= "paragraphs" then
+    error "Invalid format. Use 'words' or 'paragraphs'."
+  end
+
+  -- Get the sentence length configuration
+  local sentence_config = get_sentence_config()
+
+  -- Use custom values if provided, otherwise use the defaults
+  local words_per_sentence = sentence_config.words_per_sentence
+  local sentences_per_paragraph = sentence_config.sentences_per_paragraph
+  local comma_chance = _config.comma_chance
+  local max_commas = _config.max_commas_per_sentence
+
+  local text =
+    M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
+  local lines = vim.split(text, "\n")
+
+  -- Get the current buffer
+  local buf = vim.api.nvim_get_current_buf()
+  -- Get the current cursor position
+  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+
+  -- Insert the text at the current cursor position
+  vim.api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
+end, {
+  nargs = "+",
+  complete = M.format_completion,
+})
