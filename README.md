@@ -18,11 +18,11 @@ Easily generate dummy text in Neovim
 use {
   'derektata/lorem.nvim',
   config = function()
-    require('lorem').setup({
+    require('lorem').opts {
       sentenceLength = "medium",
       comma_chance = 0.2,
       max_commas_per_sentence = 2,
-    })
+    }
   end
 }
 ```
@@ -33,11 +33,11 @@ use {
 return {
   'derektata/lorem.nvim',
   config = function()
-      require('lorem').setup({
+      require('lorem').opts {
           sentenceLength = "medium",
           comma_chance = 0.2,
           max_commas_per_sentence = 2,
-      })
+      }
   end
 }
 ```
@@ -47,22 +47,22 @@ return {
 The plugin is designed to be as plug-and-play as possible, and therefore no setup is needed as it is shipped with sensible defaults. It is hovewer possible to customize the behavior of the plugin in setup like this:
 
 ```lua
-require('lorem').setup({
+require('lorem').opts {
     sentenceLength = "mixed",  -- using a default configuration
     comma_chance = 0.3,  -- 30% chance to insert a comma
     max_commas_per_sentence = 2  -- maximum 2 commas per sentence
-})
+}
 
 -- or
 
-require('lorem').setup({
+require('lorem').opts {
     sentenceLength = { -- custom configuration
       words_per_sentence = 8,
       sentences_per_paragraph = 6
     },
     comma_chance = 0.3,  -- 30% chance to insert a comma
     max_commas_per_sentence = 2  -- maximum 2 commas per sentence
-})
+}
 ```
 
 #### The comma_chance property
@@ -91,26 +91,23 @@ This property sets the maximum number of commas that can be inserted in a single
 #### in the editor:
 
 ```text
-# default: 100
-:LoremIpsum <number_of_words> <mode>
+# defaults: 100 words, 1 paragraph
+:LoremIpsum <mode> <amount>
 
-                ┌─────────────────┐
-                │┌───────────────┐│
-                ││     words     ││
-                │└───────────────┘│
-                *******************
-                │┌───────────────┐│
-                ││  paragraphs   ││
-                │└───────────────┘│
-                └─────────────────┘
-┌────────────────────┐
-│:LoremIspum 10 <Tab>│
-└────────────────────┘
+                          ┌────────────┐        
+                          │            │        
+                          │    Menu    │        
+                          │depending on│        
+            ┌────────────┐│  previous  │        
+            │   words    ││ selection  │        
+            │ paragraphs ││            │        
+            └────────────┘└────────────┘        
+────────────────────────────────────────────────
+:LoremIpsum     <TAB>         <TAB>             
 
 # i.e.
-:LoremIpsum 1000 words
-:LoremIpsum 2 paragraphs
-:LoremIpsum 3 paragraphs 8 6  -- Generate 3 paragraphs, each with 6 sentences, each sentence with 8 words
+:LoremIpsum words 1000
+:LoremIpsum paragraphs 2
 ```
 
 #### headless mode:
@@ -118,8 +115,15 @@ This property sets the maximum number of commas that can be inserted in a single
 ```bash
 # print lorem ipsum words to the terminal
 # (default: 100)
-nvim --headless -c 'lua print(require("lorem").gen_words())' +qall | tail -n +1
+nvim --headless -c 'lua print(require("lorem").words())' +qall | tail -n +1
 
 # print 500 words to the terminal
-nvim --headless -c 'lua print(require("lorem").gen_words(500))' +qall | tail -n +1
+nvim --headless -c 'lua print(require("lorem").words(500))' +qall | tail -n +1
+
+# using the lua file
+nvim -l ./lorem.lua -w 10
+
+# using the shell script
+chmod +x lorem.sh
+./lorem.sh -w 10
 ```
