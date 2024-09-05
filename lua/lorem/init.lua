@@ -1,7 +1,32 @@
+-- init.lua
+--     __                                       _
+--    / /___  ________  ____ ___    ____ _   __(_)___ ___
+--   / / __ \/ ___/ _ \/ __ `__ \  / __ \ | / / / __ `__ \
+--  / / /_/ / /  /  __/ / / / / / / / / / |/ / / / / / / /
+-- /_/\____/_/   \___/_/ /_/ /_(_)_/ /_/|___/_/_/ /_/ /_/
+
+local api = vim.api
+local words = require "lorem.ipsum"()
+
+-- Initialize the pseudo random number generator
+math.randomseed(os.time())
+math.random()
+
 -- @module lorem
 local M = {}
 
--- Default configuration
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Configuration Section  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+--- Default configuration table for sentence and paragraph generation.
+--- @class Config
+--- @field sentenceLength string|table Sentence length configuration. Can be "short", "medium", "long", "mixedShort", "mixed", or a custom table.
+--- @field comma_chance number Chance of inserting a comma in a sentence.
+--- @field max_commas_per_sentence number Maximum number of commas allowed in a sentence.
+--- @field format_defaults table Default sentence and paragraph structure for various length settings.
+
+--- Default configuration
 local _config = {
   sentenceLength = "medium", -- default sentence length
   comma_chance = 0.2, -- default 20% chance to insert a comma
@@ -16,133 +41,59 @@ local _config = {
   },
 }
 
---@param user_config table
---@return nil
-function M.setup(user_config)
+--- Update configuration with user settings.
+--- @param user_config table User-provided configuration to merge with default settings.
+--- @return nil
+function M.opts(user_config)
   if user_config then
     _config = vim.tbl_deep_extend("force", _config, user_config)
   end
-  M.create_command()
 end
 
--- Load the words from ipsum.lua
-local ipsum_words = require "lorem.ipsum"()
+--- Determine sentence configuration based on current settings.
+--- @return table Configuration table for sentence length and paragraphs.
+local function sentence_conf()
+  local sentenceLength = _config.sentenceLength
+  if type(sentenceLength) == "string" then
+    local format = _config.format_defaults[sentenceLength]
+    return format or _config.format_defaults["medium"]
+  end
+  if type(sentenceLength) == "table" then
+    return sentenceLength
+  end
+  error("Invalid sentenceLength configuration. Expected a string or table, got: " .. type(sentenceLength))
+end
 
---@return string
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Utility Functions Section  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+--- Get a random word from the Words table.
+-- @return string A randomly selected word from the Words list.
 local function random_word()
-  return ipsum_words[math.random(#ipsum_words)]
+  return words[math.random(#words)]
 end
 
---@param word string
---@return string
+--- Capitalize the first letter of a word.
+--- @param word string The word to capitalize.
+--- @return string The capitalized word.
 local function capitalize(word)
   return word:sub(1, 1):upper() .. word:sub(2)
 end
 
---@param words_per_sentence number
---@param comma_chance number
---@param max_commas number
---@return string
-local function generate_sentence(words_per_sentence, comma_chance, max_commas)
-  local sentence = {}
-  local comma_count = 0
-  local words_until_comma = math.floor(words_per_sentence / (max_commas + 1))
-
-  for i = 1, words_per_sentence do
-    local word = random_word()
-    if i == 1 then
-      word = capitalize(word)
-    end
-
-    -- Insert comma if conditions are met
-    if i % words_until_comma == 0 and comma_count < max_commas then
-      word = word .. ","
-      comma_count = comma_count + 1
-    end
-
-    table.insert(sentence, word)
-  end
-
-  return table.concat(sentence, " ") .. "."
-end
-
---@param sentences_per_paragraph number
---@param words_per_sentence number
---@param comma_chance number
---@param max_commas number
---@return string
-local function generate_paragraph(sentences_per_paragraph, words_per_sentence, comma_chance, max_commas)
-  local paragraph = {}
-  for _ = 1, sentences_per_paragraph do
-    table.insert(paragraph, generate_sentence(words_per_sentence, comma_chance, max_commas))
-  end
-  return table.concat(paragraph, " ")
-end
-
---@return table
-local function get_sentence_config()
-  if type(_config.sentenceLength) == "string" then
-    return _config.format_defaults[_config.sentenceLength] or _config.format_defaults["medium"]
-  elseif type(_config.sentenceLength) == "table" then
-    return _config.sentenceLength
-  else
-    error "Invalid sentenceLength configuration."
-  end
-end
-
---@param number number
---@param format string
---@param words_per_sentence number
---@param sentences_per_paragraph number
---@param comma_chance number
---@param max_commas number
---@return string
-function M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
-  local result = {}
-
-  if format == "words" then
-    -- Generate enough sentences to cover the number of words requested
-    local total_words_generated = 0
-    while total_words_generated < number do
-      local words_remaining = number - total_words_generated
-      local words_to_generate = math.min(words_remaining, words_per_sentence)
-      local sentence = generate_sentence(words_to_generate, comma_chance, max_commas)
-      table.insert(result, sentence)
-      total_words_generated = total_words_generated + words_to_generate
-    end
-    return table.concat(result, " ")
-  elseif format == "paragraphs" then
-    for _ = 1, number do
-      table.insert(result, generate_paragraph(sentences_per_paragraph, words_per_sentence, comma_chance, max_commas))
-    end
-    return table.concat(result, "\n\n")
-  else
-    error "Invalid format. Use 'words' or 'paragraphs'."
-  end
-end
-
---@param number number
---@return string
-function M.gen_words(number)
-  number = number or 100
-  local format = "words"
-
-  -- Get the sentence length configuration
-  local sentence_config = get_sentence_config()
-
-  -- Use custom values if provided, otherwise use the defaults
-  local words_per_sentence = sentence_config.words_per_sentence
-  local sentences_per_paragraph = sentence_config.sentences_per_paragraph
-  local comma_chance = _config.comma_chance
-  local max_commas = _config.max_commas_per_sentence
-
-  return M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
+--- Determine if a comma should be added to a sentence.
+--- @param ctx table The context for the current word (index, comma chance, etc.).
+--- @return boolean Whether a comma should be added.
+local function should_add_comma(ctx)
+  local random_chance = math.random(100) <= (ctx.comma_chance * 100)
+  local under_max = ctx.comma_count < ctx.max_commas
+  return random_chance and under_max
 end
 
 --- Filter options based on a prefix.
--- @param options table<string>: The list of options to filter.
--- @param prefix string: The prefix to filter by.
--- @return table<string>: The filtered options.
+--- @param options table The list of options to filter.
+--- @param prefix string The prefix to filter by.
+--- @return table The filtered options.
 local function filter_opts(options, prefix)
   local filtered_opts = {}
   for _, opt in ipairs(options) do
@@ -153,66 +104,165 @@ local function filter_opts(options, prefix)
   return filtered_opts
 end
 
---- Provide autocomplete suggestions for the LoremIpsum command.
--- @param arg_lead string: The leading part of the current argument.
--- @param cmd_line string: The entire command line.
--- @param cursor_pos number: The position of the cursor in the command line.
--- @return table<string>: A list of suggestions based on the input.
-function M.format_completion(arg_lead, cmd_line, cursor_pos)
+--- Autocomplete suggestions for the LoremIpsum command.
+--- @param arg_lead string The leading part of the current argument.
+--- @param cmd_line string The entire command line.
+--- @return table A list of suggestions based on the input.
+local function format_completion(arg_lead, cmd_line)
   local args = vim.split(cmd_line, "%s+")
+  local complete_opts = {
+    words = { "10", "20", "50", "100" },
+    paragraphs = { "1", "2", "3", "5" },
+  }
+
   if #args == 2 then
     return filter_opts({ "words", "paragraphs" }, arg_lead)
   elseif #args == 3 then
-    local textType = args[2]
-    local options = {
-      words = { "10", "20", "50", "100" },
-      paragraphs = { "1", "2", "3", "5" },
-    }
-    return filter_opts(options[textType] or {}, arg_lead)
+    return filter_opts(complete_opts[args[2]] or {}, arg_lead)
   end
+
+  return {}
 end
 
---- Create the "LoremIpsum" user command.
--- @param opts table: The options table provided by Neovim for user commands.
--- @return nil
-vim.api.nvim_create_user_command("LoremIpsum", function(opts)
-  local args = vim.split(opts.args, " ")
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Core Functions Section  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-  -- Ensure there are at least 2 arguments
-  if #args < 2 then
-    print "Invalid number of arguments. Usage: LoremIpsum <words|paragraphs> amount>"
-    return
+--- Build a sentence with the specified number of words.
+--- @param w_per_sentence number Number of words in the sentence.
+--- @return string The generated sentence.
+local function build_sentence(w_per_sentence)
+  local s = {}
+  local comma_count = 0
+  local comma_chance = _config.comma_chance
+  local max_commas = _config.max_commas_per_sentence
+  local w_until_comma = math.floor(w_per_sentence / ((max_commas or 0) + 1))
+
+  for i = 1, w_per_sentence do
+    local w = random_word()
+    if i == 1 then
+      w = capitalize(w)
+    end
+
+    local ctx = {
+      index = i,
+      comma_chance = comma_chance,
+      words_until_comma = w_until_comma,
+      comma_count = comma_count,
+      max_commas = max_commas,
+    }
+
+    if i < w_per_sentence and should_add_comma(ctx) then
+      w = w .. ","
+      comma_count = comma_count + 1
+    end
+
+    table.insert(s, w)
   end
 
-  local format = args[1] or "words"
-  local number = tonumber(args[2]) or 100
+  return table.concat(s, " ") .. "."
+end
 
-  -- Validate format
+--- Build a paragraph with the specified number of sentences.
+--- @param w_per_sentence number Number of words per sentence.
+--- @param s_per_paragraph number Number of sentences per paragraph.
+--- @return string The generated paragraph.
+local function build_paragraph(w_per_sentence, s_per_paragraph)
+  local paragraph = {}
+  for _ = 1, s_per_paragraph do
+    table.insert(paragraph, build_sentence(w_per_sentence))
+  end
+  return table.concat(paragraph, " ")
+end
+
+--- Generate a specific number of words.
+--- @param amount number|nil The total number of words to generate. Defaults to 100 if not provided.
+--- @return string The generated text containing the requested number of words.
+function M.words(amount)
+  amount = amount or 100
+
+  local result = {}
+  local total_w_generated = 0
+  local s_config = sentence_conf()
+  local w_per_sentence = s_config.words_per_sentence
+
+  while total_w_generated < amount do
+    local w_to_generate = math.min(amount - total_w_generated, w_per_sentence)
+    table.insert(result, build_sentence(w_to_generate))
+    total_w_generated = total_w_generated + w_to_generate
+  end
+
+  return table.concat(result, " ")
+end
+
+--- Generate a specific number of paragraphs.
+--- @param amount number The total number of paragraphs to generate.
+--- @return string The generated text containing the requested number of paragraphs.
+function M.paragraphs(amount)
+  amount = amount or 1
+
+  local result = {}
+  local s_config = sentence_conf()
+  local w_per_sentence = s_config.words_per_sentence
+  local s_per_paragraph = s_config.sentences_per_paragraph
+
+  for _ = 1, amount do
+    table.insert(result, build_paragraph(w_per_sentence, s_per_paragraph))
+  end
+  return table.concat(result, "\n\n")
+end
+
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Command Handler Section  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+--- Handle the generation and insertion of lorem ipsum text.
+--- @param format string The format of the text to generate ("words" or "paragraphs").
+--- @param amount number The amount of text to generate (number of words or paragraphs).
+--- @return nil
+local function handle_command(format, amount)
   if format ~= "words" and format ~= "paragraphs" then
     error "Invalid format. Use 'words' or 'paragraphs'."
   end
 
-  -- Get the sentence length configuration
-  local sentence_config = get_sentence_config()
+  local result
+  if format == "words" then
+    result = M.words(amount)
+  else
+    result = M.paragraphs(amount)
+  end
 
-  -- Use custom values if provided, otherwise use the defaults
-  local words_per_sentence = sentence_config.words_per_sentence
-  local sentences_per_paragraph = sentence_config.sentences_per_paragraph
-  local comma_chance = _config.comma_chance
-  local max_commas = _config.max_commas_per_sentence
+  local lines = vim.split(result, "\n")
+  local buf = api.nvim_get_current_buf()
+  local row, col = unpack(api.nvim_win_get_cursor(0))
+  api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
+end
 
-  local text =
-    M.generate_lorem_ipsum(number, format, words_per_sentence, sentences_per_paragraph, comma_chance, max_commas)
-  local lines = vim.split(text, "\n")
+--                          ┌────────────┐
+--                          │            │
+--                          │    Menu    │
+--                          │depending on│
+--           ┌────────────┐ │  previous  │
+--           │   words    │ │ selection  │
+--           │ paragraphs │ │            │
+--           └────────────┘ └────────────┘
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- :LoremIpsum   <TAB>          <TAB>
 
-  -- Get the current buffer
-  local buf = vim.api.nvim_get_current_buf()
-  -- Get the current cursor position
-  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+api.nvim_create_user_command("LoremIpsum", function(opts)
+  local args = vim.split(opts.args, " ")
+  if #args < 2 then
+    print "Invalid number of arguments. Usage: LoremIpsum <words|paragraphs> <amount>"
+    return
+  end
 
-  -- Insert the text at the current cursor position
-  vim.api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
+  local format = args[1]
+  local amount = tonumber(args[2]) or 100
+
+  handle_command(format, amount)
 end, {
   nargs = "+",
-  complete = M.format_completion,
+  complete = format_completion,
 })
+
+return M
