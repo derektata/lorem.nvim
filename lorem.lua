@@ -1,3 +1,5 @@
+#!/usr/bin/env -S nvim -l
+
 local lorem = require "lorem"
 
 -- Function to print usage and exit
