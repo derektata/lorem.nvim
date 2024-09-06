@@ -120,9 +120,6 @@ nvim --headless -c 'lua print(require("lorem").words())' +qall | tail -n +1
 # print 500 words to the terminal
 nvim --headless -c 'lua print(require("lorem").words(500))' +qall | tail -n +1
 
-# using the lua file
-nvim -l ./lorem.lua -w 10
-
 # using the shell script
 chmod +x lorem.sh
 ./lorem.sh -w 10
