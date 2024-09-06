@@ -65,17 +65,9 @@ require('lorem').opts {
 }
 ```
 
-#### The comma_chance property
-
-This property controls the likelihood of inserting a comma after a word within a sentence. This property allows for the generation of more natural-looking text by adding occasional commas, mimicking the natural pauses in human writing.
-
 #### The sentenceLength property
 
 This property determines the intervals for how long the sentences of latin words should be before ending them with a period. The following values are available:
-
-#### The max_commas_per_sentence property
-
-This property sets the maximum number of commas that can be inserted in a single sentence. This property ensures that sentences do not become overly complex or cluttered with too many commas, maintaining readability and natural flow.
 
 | **Value**  | **Words Per Sentence** | **Sentences Per Paragraph** |
 | :--------: | :--------------------: | :-------------------------: |
@@ -86,6 +78,14 @@ This property sets the maximum number of commas that can be inserted in a single
 |   mixed    |           12           |              6              |
 | mixedLong  |           16           |              8              |
 
+#### The comma_chance property
+
+This property controls the likelihood of inserting a comma after a word within a sentence. This property allows for the generation of more natural-looking text by adding occasional commas, mimicking the natural pauses in human writing.
+
+#### The max_commas_per_sentence property
+
+This property sets the maximum number of commas that can be inserted in a single sentence. This property ensures that sentences do not become overly complex or cluttered with too many commas, maintaining readability and natural flow.
+
 ### Usage
 
 #### in the editor:
@@ -94,16 +94,16 @@ This property sets the maximum number of commas that can be inserted in a single
 # defaults: 100 words, 1 paragraph
 :LoremIpsum <mode> <amount>
 
-                          ┌────────────┐        
-                          │            │        
-                          │    Menu    │        
-                          │depending on│        
-            ┌────────────┐│  previous  │        
-            │   words    ││ selection  │        
-            │ paragraphs ││            │        
-            └────────────┘└────────────┘        
+                          ┌────────────┐
+                          │            │
+                          │    Menu    │
+                          │depending on│
+            ┌────────────┐│  previous  │
+            │   words    ││ selection  │
+            │ paragraphs ││            │
+            └────────────┘└────────────┘
 ────────────────────────────────────────────────
-:LoremIpsum     <TAB>         <TAB>             
+:LoremIpsum     <TAB>         <TAB>
 
 # i.e.
 :LoremIpsum words 1000
