@@ -109,6 +109,19 @@ This property sets the maximum number of commas that can be inserted in a single
 :LoremIpsum words 1000
 :LoremIpsum paragraphs 2
 ```
+Custom usage for paragraphs:
+```text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     :LoremIpsum  paragraphs  1  10  5        
+                       ┃      ┃   ┃  ┃        
+         format━━━━━━━━┛      ┃   ┃  ┃        
+                              ┃   ┃  ┃        
+         amount━━━━━━━━━━━━━━━┛   ┃  ┃        
+                                  ┃  ┃        
+ w_per_sentence━━━━━━━━━━━━━━━━━━━┛  ┃        
+                                     ┃        
+s_per_paragraph━━━━━━━━━━━━━━━━━━━━━━┛        
+```
 
 #### headless mode:
 
