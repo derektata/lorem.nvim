@@ -19,7 +19,7 @@ local M = {}
 -- ┃  Configuration Section  ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
---- Configuration for sentence and paragraph generation.
+--- Configuration table for sentence and paragraph generation.
 --- @class Config
 --- @field sentenceLength string|table Specifies the sentence length format.
 --- @field comma_chance number Probability of adding a comma in a sentence.
@@ -32,12 +32,12 @@ local _config = {
   comma_chance = 0.2, -- default 20% chance to insert a comma
   max_commas = 2, -- default maximum number of commas per sentence
   format_defaults = {
-    short = { words_per_sentence = 5, sentences_per_paragraph = 3 },
-    medium = { words_per_sentence = 10, sentences_per_paragraph = 5 },
-    long = { words_per_sentence = 14, sentences_per_paragraph = 7 },
-    mixedShort = { words_per_sentence = 8, sentences_per_paragraph = 4 },
-    mixed = { words_per_sentence = 12, sentences_per_paragraph = 6 },
-    mixedLong = { words_per_sentence = 16, sentences_per_paragraph = 8 },
+    short = { w_per_sentence = 5, s_per_paragraph = 3 },
+    medium = { w_per_sentence = 10, s_per_paragraph = 5 },
+    long = { w_per_sentence = 14, s_per_paragraph = 7 },
+    mixedShort = { w_per_sentence = 8, s_per_paragraph = 4 },
+    mixed = { w_per_sentence = 12, s_per_paragraph = 6 },
+    mixedLong = { w_per_sentence = 16, s_per_paragraph = 8 },
   },
 }
 
@@ -53,15 +53,11 @@ end
 --- @return table Configuration table for sentence length and paragraph structure.
 local function sentence_conf()
   local sentenceLength = _config.sentenceLength
-
   if type(sentenceLength) == "string" then
-    -- Lookup the format for predefined string types
     return _config.format_defaults[sentenceLength] or _config.format_defaults["medium"]
   elseif type(sentenceLength) == "table" then
-    -- Return custom table configuration directly
     return sentenceLength
   else
-    -- Provide a better error message
     error("Invalid sentenceLength configuration. Expected a string or table, got: " .. type(sentenceLength))
   end
 end
@@ -139,7 +135,7 @@ local function format_completion(arg_lead, cmd_line)
 end
 
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
--- ┃  Core Functions Section  ┃
+-- ┃  Text Generation Section ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 --- Build a sentence with a specified number of words.
@@ -168,48 +164,56 @@ local function build_sentence(w_per_sentence)
   return table.concat(s, " ") .. "."
 end
 
+--- Build sentences based on a count and sentence generation function.
+--- @param count number Number of sentences to build.
+--- @param generator function A function to generate a sentence.
+--- @return table A list of generated sentences.
+local function build_sentences(count, generator)
+  local sentences = {}
+  for _ = 1, count do
+    table.insert(sentences, generator())
+  end
+  return sentences
+end
+
 --- Build a paragraph with a specified number of sentences.
 --- @param w_per_sentence number Words per sentence.
 --- @param s_per_paragraph number Sentences per paragraph.
 --- @return string A generated paragraph.
 local function build_paragraph(w_per_sentence, s_per_paragraph)
-  local paragraph = {}
-  for _ = 1, s_per_paragraph do
-    table.insert(paragraph, build_sentence(w_per_sentence))
-  end
-  return table.concat(paragraph, " ")
+  return table.concat(
+    build_sentences(s_per_paragraph, function()
+      return build_sentence(w_per_sentence)
+    end),
+    " "
+  )
+end
+
+--- Get configuration for text generation.
+--- @param config table User-provided config or nil.
+--- @return table Merged config with defaults.
+local function get_config(config)
+  local s_config = sentence_conf()
+  config.format = config.format or "words"
+  config.amount = config.amount or 1
+  config.w_per_sentence = config.w_per_sentence or s_config.w_per_sentence
+  config.s_per_paragraph = config.s_per_paragraph or s_config.s_per_paragraph
+  return config
 end
 
 --- Generate a block of text based on the specified format and configuration.
--- @param config table A table containing configuration options:
---   - format (string): The format of the text, either "words" or "paragraphs" (default is "words").
---   - amount (number): The number of words or paragraphs to generate.
---   - w_per_sentence (number, optional): Number of words per sentence. Defaults to a value from sentence_conf().
---   - s_per_paragraph (number, optional): Number of sentences per paragraph. Defaults to a value from sentence_conf().
--- @return string A generated block of text.
--- @error Invalid format if the format is not "words" or "paragraphs".
-
---- @class GenConfig
---- @field format string "words" or "paragraphs" (default is "words").
---- @field amount number Number of words or paragraphs to generate.
---- @field w_per_sentence number Optional. Words per sentence (default from sentence_conf()).
---- @field s_per_paragraph number Optional. Sentences per paragraph (default from sentence_conf()).
-
---- @param config GenConfig A table containing the configuration options for generating text.
---- @return string A block of generated text.
+--- @param config table A table containing configuration options:
+---   - format (string): The format of the text, either "words" or "paragraphs" (default is "words").
+---   - amount (number): The number of words or paragraphs to generate.
+---   - w_per_sentence (number, optional): Number of words per sentence. Defaults to a value from sentence_conf().
+---   - s_per_paragraph (number, optional): Number of sentences per paragraph. Defaults to a value from sentence_conf().
+--- @return string A generated block of text.
+--- @error Invalid format if the format is not "words" or "paragraphs".
 local function generate_text(config)
-  local s_config = sentence_conf()
-
-  -- Default values
-  config.format = config.format or "words"
-  config.amount = config.amount or 1
-  config.w_per_sentence = config.w_per_sentence or s_config.words_per_sentence
-  config.s_per_paragraph = config.s_per_paragraph or s_config.sentences_per_paragraph
-
+  config = get_config(config)
   local result = {}
   local total_w_generated = 0
 
-  -- Generate text based on format
   if config.format == "words" then
     while total_w_generated < config.amount do
       local w_to_generate = math.min(config.amount - total_w_generated, config.w_per_sentence)
@@ -227,32 +231,33 @@ local function generate_text(config)
   return table.concat(result, "\n\n")
 end
 
---- Generate a specified number of words.
---- @param amount number The number of words to generate.
---- @return string The generated words.
-function M.words(amount)
+--- Common function to generate text.
+--- @param format string "words" or "paragraphs".
+--- @param amount number Number of words or paragraphs to generate.
+--- @return string The generated text.
+local function generate(format, amount)
   local s_config = sentence_conf()
   local config = {
-    format = "words",
-    amount = amount or 100,
+    format = format,
+    amount = amount or (format == "words" and 100 or 1),
     w_per_sentence = s_config.w_per_sentence,
     s_per_paragraph = s_config.s_per_paragraph,
   }
   return generate_text(config)
 end
 
+--- Generate a specified number of words.
+--- @param amount number The number of words to generate.
+--- @return string The generated words.
+function M.words(amount)
+  return generate("words", amount)
+end
+
 --- Generate a specified number of paragraphs.
 --- @param amount number The number of paragraphs to generate.
 --- @return string The generated paragraphs.
 function M.paragraphs(amount)
-  local s_config = sentence_conf()
-  local config = {
-    format = "paragraphs",
-    amount = amount or 1,
-    w_per_sentence = s_config.w_per_sentence,
-    s_per_paragraph = s_config.s_per_paragraph,
-  }
-  return generate_text(config)
+  return generate("paragraphs", amount)
 end
 
 --- Generate Custom Ipsum text based on given arguments.
@@ -263,8 +268,8 @@ function M.ipsum(args)
   local config = {
     format = parts[1],
     amount = tonumber(parts[2]) or 100,
-    w_per_sentence = tonumber(parts[3]) or _config.format_defaults.medium.words_per_sentence,
-    s_per_paragraph = tonumber(parts[4]) or _config.format_defaults.medium.sentences_per_paragraph,
+    w_per_sentence = tonumber(parts[3]) or _config.format_defaults.medium.w_per_sentence,
+    s_per_paragraph = tonumber(parts[4]) or _config.format_defaults.medium.s_per_paragraph,
   }
   return generate_text(config)
 end
@@ -273,37 +278,29 @@ end
 -- ┃  Command Handler Section  ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
---- Handle the LoremIpsum command to insert generated text into the buffer.
---- Calls the `ipsum` method if args[3] or args[4] are present for custom generation.
---- Otherwise calls `M.words` or `M.paragraphs`.
---- @param args table The arguments for the command.
-local function handle_command(args)
-  local format = args[1] -- "words" or "paragraphs"
-  local amount = tonumber(args[2]) or 100 -- Default to 100 words or 1 paragraph.
-  local w_per_sentence = tonumber(args[3]) -- Optional custom words per sentence.
-  local s_per_paragraph = tonumber(args[4]) -- Optional custom sentences per paragraph.
-
-  local result = ""
-
-  -- If custom word/sentence configuration is provided (args[3] or args[4]), call ipsum method
-  if w_per_sentence or s_per_paragraph then
-    result = M.ipsum(table.concat(args, " ")) -- Pass all args to ipsum for custom text generation
-  else
-    -- Use default word or paragraph generation based on format
-    if format == "words" then
-      result = M.words(amount) -- Generate words
-    elseif format == "paragraphs" then
-      result = M.paragraphs(amount) -- Generate paragraphs
-    else
-      print "Invalid format. Use 'words' or 'paragraphs'."
-      return
-    end
-  end
-
-  local lines = vim.split(result, "\n")
+--- Helper function to insert text into the current buffer.
+--- @param text string The text to insert.
+local function insert_text(text)
+  local lines = vim.split(text, "\n")
   local buf = api.nvim_get_current_buf()
   local row, col = unpack(api.nvim_win_get_cursor(0))
   api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
+end
+
+--- Handle the LoremIpsum command to insert generated text into the buffer.
+--- Calls the `ipsum` method if custom generation is requested.
+--- @param args table The arguments for the command.
+local function handle_command(args)
+  local format = args[1]
+  local amount = tonumber(args[2]) or 100
+
+  if args[3] or args[4] then
+    local result = M.ipsum(table.concat(args, " "))
+    insert_text(result)
+  else
+    local result = format == "words" and M.words(amount) or M.paragraphs(amount)
+    insert_text(result)
+  end
 end
 
 --                          ┌────────────┐
