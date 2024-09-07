@@ -214,50 +214,48 @@ local function generate_text(config)
   local result = {}
   local total_w_generated = 0
 
+  -- Generate text based on format
   if config.format == "words" then
+    -- Generate words until the word limit is reached
     while total_w_generated < config.amount do
       local w_to_generate = math.min(config.amount - total_w_generated, config.w_per_sentence)
       table.insert(result, build_sentence(w_to_generate))
       total_w_generated = total_w_generated + w_to_generate
     end
+    -- Return continuous text with no newlines between sentences
+    return table.concat(result, " ")
   elseif config.format == "paragraphs" then
+    -- Generate paragraphs with sentences and add newlines between paragraphs
     for _ = 1, config.amount do
       table.insert(result, build_paragraph(config.w_per_sentence, config.s_per_paragraph))
     end
+    -- Return text with paragraphs separated by newlines
+    return table.concat(result, "\n\n")
   else
     error "Invalid format. Use 'words' or 'paragraphs'."
   end
-
-  return table.concat(result, "\n\n")
 end
 
---- Common function to generate text.
---- @param format string "words" or "paragraphs".
---- @param amount number Number of words or paragraphs to generate.
---- @return string The generated text.
-local function generate(format, amount)
-  local s_config = sentence_conf()
-  local config = {
-    format = format,
-    amount = amount or (format == "words" and 100 or 1),
-    w_per_sentence = s_config.w_per_sentence,
-    s_per_paragraph = s_config.s_per_paragraph,
-  }
-  return generate_text(config)
-end
-
---- Generate a specified number of words.
+--- Generate a specified number of words while building sentences.
 --- @param amount number The number of words to generate.
 --- @return string The generated words.
 function M.words(amount)
-  return generate("words", amount)
+  local config = {
+    format = "words",
+    amount = amount or 100,
+  }
+  return generate_text(config)
 end
 
 --- Generate a specified number of paragraphs.
 --- @param amount number The number of paragraphs to generate.
 --- @return string The generated paragraphs.
 function M.paragraphs(amount)
-  return generate("paragraphs", amount)
+  local config = {
+    format = "paragraphs",
+    amount = amount or 1,
+  }
+  return generate_text(config)
 end
 
 --- Generate Custom Ipsum text based on given arguments.
