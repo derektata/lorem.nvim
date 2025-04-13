@@ -12,23 +12,21 @@ local words = require "lorem.ipsum"()
 math.randomseed(os.time())
 math.random()
 
--- @module lorem
-local M = {}
-
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
 -- ┃  Configuration Section  ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 --- Configuration table for sentence and paragraph generation.
 --- @class Config
---- @field sentenceLength string|table Specifies the sentence length format.
+--- @field sentence_length string|table Specifies the sentence length format.
 --- @field comma_chance number Probability of adding a comma in a sentence.
 --- @field max_commas number Maximum number of commas allowed in a sentence.
 --- @field format_defaults table Predefined formats for sentence and paragraph structure.
+--- @field mappings table List of keys to map for text generation.
 
 --- Default configuration
 local _config = {
-  sentenceLength = "medium", -- default sentence length
+  sentence_length = "medium", -- default sentence length
   comma_chance = 0.2, -- default 20% chance to insert a comma
   max_commas = 2, -- default maximum number of commas per sentence
   format_defaults = {
@@ -39,9 +37,13 @@ local _config = {
     mixed = { w_per_sentence = 12, s_per_paragraph = 6 },
     mixedLong = { w_per_sentence = 16, s_per_paragraph = 8 },
   },
+  mappings = { "<Space>" }, -- default key mapping; add more keys if desired
 }
 
---- Update configuration with user-defined settings.
+--- @module lorem
+local M = {}
+
+--- Override default configurations with user-provided settings.
 --- @param user_config Config Configuration table with user-specific overrides.
 function M.opts(user_config)
   if user_config then
@@ -52,13 +54,13 @@ end
 --- Retrieve sentence configuration based on current settings.
 --- @return table Configuration table for sentence length and paragraph structure.
 local function sentence_conf()
-  local sentenceLength = _config.sentenceLength
-  if type(sentenceLength) == "string" then
-    return _config.format_defaults[sentenceLength] or _config.format_defaults["medium"]
-  elseif type(sentenceLength) == "table" then
-    return sentenceLength
+  local sentence_length = _config.sentence_length
+  if type(sentence_length) == "string" then
+    return _config.format_defaults[sentence_length] or _config.format_defaults["medium"]
+  elseif type(sentence_length) == "table" then
+    return sentence_length
   else
-    error("Invalid sentenceLength configuration. Expected a string or table, got: " .. type(sentenceLength))
+    error("Invalid sentence_length configuration. Expected a string or table, got: " .. type(sentence_length))
   end
 end
 
@@ -134,9 +136,9 @@ local function format_completion(arg_lead, cmd_line)
   return {}
 end
 
--- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
--- ┃  Text Generation Section ┃
--- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Text Generation Section  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 --- Build a sentence with a specified number of words.
 --- @param w_per_sentence number The number of words in the sentence.
@@ -214,7 +216,6 @@ local function generate_text(config)
   local result = {}
   local total_w_generated = 0
 
-  -- Generate text based on format
   if config.format == "words" then
     -- Generate words until the word limit is reached
     while total_w_generated < config.amount do
@@ -272,6 +273,18 @@ function M.ipsum(args)
   return generate_text(config)
 end
 
+-- Custom Ipsum
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--      :LoremIpsum  paragraphs  1  10  5
+--                        ┃      ┃   ┃  ┃
+--          format━━━━━━━━┛      ┃   ┃  ┃
+--                               ┃   ┃  ┃
+--          amount━━━━━━━━━━━━━━━┛   ┃  ┃
+--                                   ┃  ┃
+--  w_per_sentence━━━━━━━━━━━━━━━━━━━┛  ┃
+--                                      ┃
+-- s_per_paragraph━━━━━━━━━━━━━━━━━━━━━━┛
+
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 -- ┃  Command Handler Section  ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -285,8 +298,92 @@ local function insert_text(text)
   api.nvim_buf_set_text(buf, row - 1, col, row - 1, col, lines)
 end
 
+--- Extract the number and format from the input line.
+--- @param line string The line to extract from.
+--- @return number|nil, string|nil The number and format, or nil if invalid.
+local function get_num_fmt(line)
+  local num_str, fmt = line:match "lorem(%d+)(p?)$"
+  return tonumber(num_str), fmt
+end
+
+--- Check if the number is valid.
+--- @param num number The number to check.
+--- @return boolean Whether the number is valid.
+local function is_valid_num(num)
+  if not num or num <= 0 then
+    vim.notify("Please provide a positive number.", vim.log.levels.ERROR)
+    return false
+  elseif num > 1000 then
+    vim.notify("Number too large. Max allowed is 1000.", vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
+--- Replace the trigger pattern in the current line with generated text.
+--- @param line string The current line.
+--- @param row number The current row.
+--- @param text string The text to insert.
+local function replace_text(line, row, text)
+  local start_idx, end_idx = line:find "lorem%d+p?$"
+  if start_idx and end_idx then
+    local lines = vim.split(text, "\n")
+    vim.api.nvim_buf_set_text(0, row - 1, start_idx - 1, row - 1, end_idx, lines)
+  end
+end
+
+--- Handle the keyword trigger to generate and replace text.
+local function on_keyword()
+  local line = vim.api.nvim_get_current_line()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+
+  -- Get number and format
+  local num, fmt = get_num_fmt(line)
+  if not num then
+    vim.notify("Invalid format. Use 'lorem<amount>' or 'lorem<amount>p'.", vim.log.levels.WARN)
+    return
+  end
+
+  -- Validate number
+  if not is_valid_num(num) then
+    return
+  end
+
+  -- Generate and replace text
+  local gen_text = fmt == "p" and M.paragraphs(num) or M.words(num)
+  replace_text(line, row, gen_text)
+end
+
+--- Function to check the current line and perform actions based on patterns
+--- @param key string The key that was pressed.
+local function check_line(key)
+  local line = vim.api.nvim_get_current_line()
+
+  -- Pattern to match 'lorem' followed by digits and optional 'p' at the end
+  if line:match "lorem%d+p?$" then
+    on_keyword()
+  else
+    -- If not a trigger pattern, insert the key normally
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(key, true, true, true), "n", true)
+  end
+end
+
+--- Function to map a single key in insert mode
+--- @param key string The key to map.
+local function map_key(key)
+  vim.keymap.set("i", key, function()
+    check_line(key)
+  end, { buffer = true })
+end
+
+--- Function to setup all key mappings
+local function setup()
+  for _, key in ipairs(_config.mappings) do
+    map_key(key)
+  end
+end
+
 --- Handle the LoremIpsum command to insert generated text into the buffer.
---- Calls the `ipsum` method if custom generation is requested.
 --- @param args table The arguments for the command.
 local function handle_command(args)
   local format = args[1]
@@ -301,6 +398,9 @@ local function handle_command(args)
   end
 end
 
+-- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+-- ┃  Command and Autocommand Setup  ┃
+-- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 --                          ┌────────────┐
 --                          │            │
 --                          │    Menu    │
@@ -311,13 +411,13 @@ end
 --           └────────────┘ └────────────┘
 -- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 -- :LoremIpsum   <TAB>          <TAB>
-
---- @param opts table Command options.
+--
+-- Create the LoremIpsum command with autocomplete
 api.nvim_create_user_command("LoremIpsum", function(opts)
   local args = vim.split(opts.args, " ")
 
   if #args < 2 then
-    print "Invalid number of arguments. Usage: LoremIpsum <words|paragraphs> <amount>"
+    vim.notify("Invalid number of arguments. Usage: LoremIpsum <words|paragraphs> <amount>", vim.log.levels.ERROR)
     return
   end
 
@@ -325,6 +425,13 @@ api.nvim_create_user_command("LoremIpsum", function(opts)
 end, {
   nargs = "+",
   complete = format_completion,
+})
+
+-- Setup key mappings on buffer enter
+api.nvim_create_autocmd("BufEnter", {
+  callback = function()
+    setup()
+  end,
 })
 
 return M
