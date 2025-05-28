@@ -10,10 +10,11 @@ Easily generate dummy text in Neovim
 use {
   'derektata/lorem.nvim',
   config = function()
-    require('lorem').opts {
-      sentence_length = "medium",
-      comma_chance = 0.2,
-      max_commas = 2,
+    require("lorem").opts {
+      sentence_length = "mixed", -- using a default configuration
+      comma_chance = 0.3, -- 30% chance to insert a comma
+      max_commas = 2, -- maximum 2 commas per sentence
+      debounce_ms = 200, -- default debounce time in milliseconds
     }
   end
 }
@@ -25,11 +26,12 @@ use {
 return {
   'derektata/lorem.nvim',
   config = function()
-      require('lorem').opts {
-          sentence_length = "medium",
-          comma_chance = 0.2,
-          max_commas = 2,
-      }
+    require("lorem").opts {
+        sentence_length = "mixed", -- using a default configuration
+        comma_chance = 0.3, -- 30% chance to insert a comma
+        max_commas = 2, -- maximum 2 commas per sentence
+        debounce_ms = 200, -- default debounce time in milliseconds
+    }
   end
 }
 ```
@@ -43,6 +45,7 @@ require('lorem').opts {
     sentence_length = "mixed",  -- using a default configuration
     comma_chance = 0.3,  -- 30% chance to insert a comma
     max_commas = 2  -- maximum 2 commas per sentence
+    debounce_ms = 200, -- default debounce time in milliseconds
 }
 
 -- or
@@ -54,6 +57,7 @@ require('lorem').opts {
     },
     comma_chance = 0.3,  -- 30% chance to insert a comma
     max_commas = 2  -- maximum 2 commas per sentence
+    debounce_ms = 200, -- default debounce time in milliseconds
 }
 ```
 
@@ -78,15 +82,29 @@ This property controls the likelihood of inserting a comma after a word within a
 
 This property sets the maximum number of commas that can be inserted in a single sentence. This property ensures that sentences do not become overly complex or cluttered with too many commas, maintaining readability and natural flow.
 
-#### The `mappings` property
+#### The `debounce_ms` property
 
-This property defines a list of keys that are mapped to trigger specific actions, such as generating text or handling keywords. By default, the `mappings` property is set to `<Space>`, which means pressing the spacebar will invoke the text generation logic while typing. You can customize this list to include additional keys if desired.
+This property controls how long (in milliseconds) the plugin waits after you stop typing before it expands an inline trigger like `lorem5` or `lorem2p`. By default it’s set to `200`, which strikes a balance between responsiveness and preventing unwanted expansions mid-typing:
 
-##### Example configuration:
+* **Lower values** (e.g. `100`)
+  * **Pros:** more immediate expansions once you pause
+  * **Cons:** may fire prematurely if you type quickly or make corrections
+
+* **Higher values** (e.g. `500`)
+  * **Pros:** reduces accidental expansions during fast typing
+  * **Cons:** introduces a longer wait before you see the generated text
+
+**Default:** `200`
+
+
+##### Example configuration
 
 ```lua
-mappings = { "<Space>" }, -- default key mapping; add more keys if desired
+require('lorem').opts {
+  debounce_ms = 300, -- wait 300 ms of inactivity before expanding inline triggers
+}
 ```
+
 
 ## Usage
 
@@ -115,18 +133,17 @@ The command features tab-completion to help streamline text generation. Start ty
 ```text
 # defaults: 100 words, 1 paragraph
 :LoremIpsum <mode> <amount>
-
-                          ┌────────────┐
-                          │            │
-                          │    Menu    │
-                          │depending on│
-            ┌────────────┐│  previous  │
-            │   words    ││ selection  │
-            │ paragraphs ││            │
-            └────────────┘└────────────┘
-────────────────────────────────────────────────
-:LoremIpsum     <TAB>         <TAB>
-             └── mode ──┘ └── amount ───┘
+                              ┌────────────┐  
+                              │            │  
+                              │    Menu    │  
+                              │depending on│  
+                ┌────────────┐│  previous  │  
+                │   words    ││ selection  │  
+                │ paragraphs ││            │  
+                └────────────┘└────────────┘  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+:LoremIpsum         <TAB>         <TAB>       
+                 ┗━━━mode━━━┛ ┗━━━amount━━━┛  
 # i.e.
 :LoremIpsum words 1000
 :LoremIpsum paragraphs 2
@@ -141,15 +158,15 @@ The **Custom Ipsum** feature offers users granular control over the generated te
 Custom usage for paragraphs:
 ```text
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     :LoremIpsum  paragraphs  1  10  5
-                       ┃      ┃   ┃  ┃
-           mode━━━━━━━━┛      ┃   ┃  ┃
-                              ┃   ┃  ┃
-         amount━━━━━━━━━━━━━━━┛   ┃  ┃
-                                  ┃  ┃
- w_per_sentence━━━━━━━━━━━━━━━━━━━┛  ┃
-                                     ┃
-s_per_paragraph━━━━━━━━━━━━━━━━━━━━━━┛
+     :LoremIpsum  paragraphs  1  10  5        
+                       ┃      ┃   ┃  ┃        
+         format━━━━━━━━┛      ┃   ┃  ┃        
+                              ┃   ┃  ┃        
+         amount━━━━━━━━━━━━━━━┛   ┃  ┃        
+                                  ┃  ┃        
+ w_per_sentence━━━━━━━━━━━━━━━━━━━┛  ┃        
+                                     ┃        
+s_per_paragraph━━━━━━━━━━━━━━━━━━━━━━┛       
 ```
 
 #### headless mode:
