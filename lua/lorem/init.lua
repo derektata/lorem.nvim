@@ -242,8 +242,10 @@ end
 ---@param line string
 ---@return integer?, string?
 local function extract_num_fmt(line)
-  local num = tonumber(line:match("lorem(%d+)(p?)$"))
-  local p   = line:match("lorem%d+(p?)$")
+  -- match "lorem" + digits + optional "p" at end of line
+  local num_str, p = line:match("lorem(%d+)(p?)$")
+  -- only convert the digits to a number
+  local num = tonumber(num_str)
   return num, p
 end
 
