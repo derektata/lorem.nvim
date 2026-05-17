@@ -40,17 +40,14 @@ require("lorem").opts {
 
 ```lua
 vim.pack.add({
-  {
-    src = 'https://github.com/derektata/lorem.nvim',
-    config = function()
-      require("lorem").opts {
-        sentence_length = "mixed",
-        comma_chance = 0.3,
-        max_commas = 2,
-      }
-    end,
-  },
+  { src = 'https://github.com/derektata/lorem.nvim' },
 })
+
+require("lorem").opts {
+  sentence_length = "mixed",
+  comma_chance = 0.3,
+  max_commas = 2,
+}
 ```
 
 ### Packer:
