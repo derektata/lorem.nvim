@@ -1,5 +1,5 @@
 {
-  description = "A very basic Neovim dev environment flake";
+  description = "lorem.nvim — Neovim plugin dev environment";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -14,33 +14,38 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      buildInputs = [
-        pkgs.neovim
-        pkgs.lua
-        pkgs.luajitPackages.luarocks-nix
-        pkgs.git
-        pkgs.stylua
-      ];
-
-      neovimClean = pkgs.writeShellScriptBin "neovim-clean" ''
-        exec ${pkgs.neovim}/bin/nvim --clean "$@"
+      # Boots Neovim with the plugin loaded from the current working directory.
+      # Equivalent to: nvim -u minimal.vim
+      nvimDev = pkgs.writeShellScriptBin "nvim-lorem" ''
+        exec ${pkgs.neovim}/bin/nvim \
+          --clean \
+          -c "set rtp^=$PWD" \
+          -c "lua require('lorem')" \
+          "$@"
       '';
+      loremNvim = pkgs.vimUtils.buildVimPlugin {
+        pname = "lorem-nvim";
+        version = "unstable";
+        src = ./.;
+      };
     in {
-      wrappers = {
-        neovimClean = neovimClean;
+      packages.default = loremNvim;
+
+      devShells.default = pkgs.mkShell {
+        buildInputs = [
+          pkgs.neovim
+          pkgs.stylua
+          pkgs.luajitPackages.luacheck
+          pkgs.lua-language-server
+          pkgs.git
+          nvimDev
+        ];
       };
 
-      devShells = {
-        default = pkgs.mkShell {
-          buildInputs = buildInputs;
-        };
+      apps.default = {
+        type = "app";
+        program = "${nvimDev}/bin/nvim-lorem";
       };
 
-      apps = {
-        neovim = {
-          type = "app";
-          program = "${neovimClean}/bin/neovim-clean";
-        };
-      };
     });
 }

@@ -4,6 +4,55 @@ Easily generate dummy text in Neovim
 
 ## Installation
 
+### Nix (flake):
+
+Add the flake input, then pass the package to your Neovim config:
+
+```nix
+# flake.nix
+inputs.lorem-nvim.url = "github:derektata/lorem.nvim";
+```
+
+**home-manager** (`programs.neovim`):
+```nix
+programs.neovim.plugins = [
+  inputs.lorem-nvim.packages.${system}.default
+];
+```
+
+**nixvim**:
+```nix
+extraPlugins = [
+  inputs.lorem-nvim.packages.${system}.default
+];
+```
+
+Then configure as usual in either case:
+```lua
+require("lorem").opts {
+  sentence_length = "mixed",
+  comma_chance = 0.3,
+  max_commas = 2,
+}
+```
+
+### vim.pack (built-in, Neovim 0.11+):
+
+```lua
+vim.pack.add({
+  {
+    src = 'https://github.com/derektata/lorem.nvim',
+    config = function()
+      require("lorem").opts {
+        sentence_length = "mixed",
+        comma_chance = 0.3,
+        max_commas = 2,
+      }
+    end,
+  },
+})
+```
+
 ### Packer:
 
 ```lua
@@ -12,9 +61,8 @@ use {
   config = function()
     require("lorem").opts {
       sentence_length = "mixed", -- using a default configuration
-      comma_chance = 0.3, -- 30% chance to insert a comma
-      max_commas = 2, -- maximum 2 commas per sentence
-      debounce_ms = 200, -- default debounce time in milliseconds
+      comma_chance = 0.3,        -- 30% chance to insert a comma
+      max_commas = 2,            -- maximum 2 commas per sentence
     }
   end
 }
@@ -27,10 +75,9 @@ return {
   'derektata/lorem.nvim',
   config = function()
     require("lorem").opts {
-        sentence_length = "mixed", -- using a default configuration
-        comma_chance = 0.3, -- 30% chance to insert a comma
-        max_commas = 2, -- maximum 2 commas per sentence
-        debounce_ms = 200, -- default debounce time in milliseconds
+      sentence_length = "mixed", -- using a default configuration
+      comma_chance = 0.3,        -- 30% chance to insert a comma
+      max_commas = 2,            -- maximum 2 commas per sentence
     }
   end
 }
@@ -38,14 +85,13 @@ return {
 
 ## Configuration
 
-The plugin is designed to be as plug-and-play as possible, and therefore no setup is needed as it is shipped with sensible defaults. It is hovewer possible to customize the behavior of the plugin in setup like this:
+The plugin is designed to be as plug-and-play as possible, and therefore no setup is needed as it is shipped with sensible defaults. It is however possible to customize the behavior of the plugin like this:
 
 ```lua
 require('lorem').opts {
-    sentence_length = "mixed",  -- using a default configuration
-    comma_chance = 0.3,  -- 30% chance to insert a comma
-    max_commas = 2  -- maximum 2 commas per sentence
-    debounce_ms = 200, -- default debounce time in milliseconds
+    sentence_length = "mixed", -- using a default configuration
+    comma_chance = 0.3,        -- 30% chance to insert a comma
+    max_commas = 2,            -- maximum 2 commas per sentence
 }
 
 -- or
@@ -55,9 +101,8 @@ require('lorem').opts {
       w_per_sentence = 8,
       s_per_paragraph = 6
     },
-    comma_chance = 0.3,  -- 30% chance to insert a comma
-    max_commas = 2  -- maximum 2 commas per sentence
-    debounce_ms = 200, -- default debounce time in milliseconds
+    comma_chance = 0.3, -- 30% chance to insert a comma
+    max_commas = 2,     -- maximum 2 commas per sentence
 }
 ```
 
@@ -82,41 +127,17 @@ This property controls the likelihood of inserting a comma after a word within a
 
 This property sets the maximum number of commas that can be inserted in a single sentence. This property ensures that sentences do not become overly complex or cluttered with too many commas, maintaining readability and natural flow.
 
-#### The `debounce_ms` property
-
-This property controls how long (in milliseconds) the plugin waits after you stop typing before it expands an inline trigger like `lorem5` or `lorem2p`. By default it’s set to `200`, which strikes a balance between responsiveness and preventing unwanted expansions mid-typing:
-
-* **Lower values** (e.g. `100`)
-  * **Pros:** more immediate expansions once you pause
-  * **Cons:** may fire prematurely if you type quickly or make corrections
-
-* **Higher values** (e.g. `500`)
-  * **Pros:** reduces accidental expansions during fast typing
-  * **Cons:** introduces a longer wait before you see the generated text
-
-**Default:** `200`
-
-
-##### Example configuration
-
-```lua
-require('lorem').opts {
-  debounce_ms = 300, -- wait 300 ms of inactivity before expanding inline triggers
-}
-```
-
-
 ## Usage
 
-### `loremX`
+### `loremX<space>`
 
-This feature allows you to generate a specified number of words of placeholder text directly in the current buffer. Simply type `loremX`, where `X` is the number of words you want, and the plugin will replace the pattern with the generated text.
+Type `loremX` followed by a space, where `X` is the number of words you want. The plugin will replace the trigger with the generated text and move the cursor to the end.
 
 <img src=".github/loremX.gif" width="700">
 
-### `loremXp`
+### `loremXp<space>`
 
-This feature enables the generation of placeholder text in paragraph format. Type `loremXp`, where `X` is the number of paragraphs you want, and the plugin will replace the pattern with the specified number of paragraphs.
+Type `loremXp` followed by a space, where `X` is the number of paragraphs you want. The plugin will replace the trigger with the specified number of paragraphs and move the cursor to the end.
 
 <img src=".github/loremXp.gif" width="700">
 

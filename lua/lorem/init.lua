@@ -7,34 +7,29 @@
 
 ---@module lorem
 
--- Core dependencies
-local api = vim.api              -- Neovim API
-local uv  = vim.loop             -- LibUV loop
+local api = vim.api
 
--- Seed RNG and load word list
-math.randomseed(os.time())       -- Seed pseudorandom
+math.randomseed(os.time())
 math.random()
 ---@type string[]
-local words = require "lorem.ipsum"()  -- Word source
+local words = require "lorem.ipsum"
 
 ---@class LoremConfig
 ---@field sentence_length string|string[]  # "short", "medium", etc.
 ---@field comma_chance number
 ---@field max_commas integer
----@field debounce_ms integer  # debounce interval in ms
 ---@field format_defaults table<string, {w_per_sentence: integer, s_per_paragraph: integer}>
 --- Module configuration
 ---@type LoremConfig
 local _config = {
   sentence_length = "medium",
-  comma_chance     = 0.2,
-  max_commas       = 2,
-  debounce_ms      = 200,
-  format_defaults  = {
-    short      = { w_per_sentence = 5,  s_per_paragraph = 3 },
+  comma_chance    = 0.2,
+  max_commas      = 2,
+  format_defaults = {
+    short      = { w_per_sentence = 5, s_per_paragraph = 3 },
     medium     = { w_per_sentence = 10, s_per_paragraph = 5 },
     long       = { w_per_sentence = 14, s_per_paragraph = 7 },
-    mixedShort = { w_per_sentence = 8,  s_per_paragraph = 4 },
+    mixedShort = { w_per_sentence = 8, s_per_paragraph = 4 },
     mixed      = { w_per_sentence = 12, s_per_paragraph = 6 },
     mixedLong  = { w_per_sentence = 16, s_per_paragraph = 8 },
   },
@@ -51,6 +46,8 @@ function M.opts(user_config)
     _config = vim.tbl_deep_extend("force", _config, user_config)
   end
 end
+
+local generate_text
 
 -- ┏━━━━━━━━━━━━━━┓
 -- ┃  Public API  ┃
@@ -85,16 +82,6 @@ end
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 -- ┃  Private Helper Functions  ┃
 -- ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
---- Get defaults for sentence/paragraph sizes
----@return {w_per_sentence: integer, s_per_paragraph: integer}
-local function sentence_conf()
-  local sl = _config.sentence_length
-  if type(sl) == "table" then
-    return sl
-  end
-  return _config.format_defaults[sl] or _config.format_defaults.medium
-end
-
 --- Pick a random word
 ---@return string
 local function random_word()
@@ -105,39 +92,7 @@ end
 ---@param word string
 ---@return string
 local function capitalize(word)
-  return word:sub(1,1):upper() .. word:sub(2)
-end
-
---- Comma context
----@class CommaCtx
----@field idx integer
----@field count integer
----@field chance number
----@field max integer
----@param i integer  # word index
----@param count integer  # commas used
----@return CommaCtx
-local function create_comma_ctx(i, count)
-  return { idx = i, count = count, chance = _config.comma_chance, max = _config.max_commas }
-end
-
---- Decide comma insertion
----@param ctx CommaCtx
----@return boolean
-local function should_comma(ctx)
-  return (math.random() <= ctx.chance) and (ctx.count < ctx.max)
-end
-
---- Filter completion options
----@param opts string[]
----@param prefix string
----@return string[]
-local function filter_opts(opts, prefix)
-  local out = {}
-  for _, o in ipairs(opts) do
-    if o:find("^" .. prefix) then table.insert(out, o) end
-  end
-  return out
+  return word:sub(1, 1):upper() .. word:sub(2)
 end
 
 --- Provide completion for :LoremIpsum
@@ -145,14 +100,10 @@ end
 ---@param cmd_line string
 ---@return string[]
 local function format_completion(arg_lead, cmd_line)
-  local choices = { words = {"10","20","50","100"}, paragraphs = {"1","2","3","5"} }
+  local choices = { words = { "10", "20", "50", "100" }, paragraphs = { "1", "2", "3", "5" } }
   local parts = vim.split(cmd_line, "%s+")
-  if #parts == 2 then
-    return filter_opts({"words","paragraphs"}, arg_lead)
-  elseif #parts == 3 then
-    return filter_opts(choices[parts[2]] or {}, arg_lead)
-  end
-  return {}
+  local pool = (#parts == 2) and { "words", "paragraphs" } or (#parts == 3) and (choices[parts[2]] or {}) or {}
+  return vim.tbl_filter(function(o) return vim.startswith(o, arg_lead) end, pool)
 end
 
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -166,36 +117,30 @@ local function build_sentence(wps)
   for i = 1, wps do
     local w = random_word()
     if i == 1 then w = capitalize(w) end
-    local ctx = create_comma_ctx(i, commas)
-    if i < wps and should_comma(ctx) then w = w .. ","; commas = commas + 1 end
+    if i < wps and commas < _config.max_commas and math.random() <= _config.comma_chance then
+      w = w .. ","; commas = commas + 1
+    end
     table.insert(t, w)
   end
   return table.concat(t, " ") .. "."
 end
 
---- Build multiple sentences
----@param n integer
----@param fn fun():string
----@return string[]
-local function build_sentences(n, fn)
-  local o = {}
-  for _ = 1, n do table.insert(o, fn()) end
-  return o
-end
-
 --- Build a paragraph
 ---@param wps integer
----@param sps integer
+---@param spp integer
 ---@return string
-local function build_paragraph(wps, sps)
-  return table.concat(build_sentences(sps, function() return build_sentence(wps) end), " ")
+local function build_paragraph(wps, spp)
+  local o = {}
+  for _ = 1, spp do table.insert(o, build_sentence(wps)) end
+  return table.concat(o, " ")
 end
 
---- Normalize config for generation
+--- Resolve generation config from user overrides and global defaults
 ---@param cfg table?
 ---@return {format: string, amount: integer, w_per_sentence: integer, s_per_paragraph: integer}
 local function get_config(cfg)
-  local base = sentence_conf()
+  local sl = _config.sentence_length
+  local base = (type(sl) == "table" and sl) or _config.format_defaults[sl] or _config.format_defaults.medium
   cfg = cfg or {}
   return {
     format          = cfg.format or "words",
@@ -208,7 +153,7 @@ end
 --- Generate text based on config
 ---@param cfg table
 ---@return string
-function generate_text(cfg)
+generate_text = function(cfg)
   local c = get_config(cfg)
   local res, total = {}, 0
   if c.format == "words" then
@@ -235,16 +180,16 @@ end
 local function insert_text(txt)
   local buf = api.nvim_get_current_buf()
   local r, c = unpack(api.nvim_win_get_cursor(0))
-  api.nvim_buf_set_text(buf, r-1, c, r-1, c, vim.split(txt, "\n"))
+  local lines = vim.split(txt, "\n")
+  api.nvim_buf_set_text(buf, r - 1, c, r - 1, c, lines)
+  api.nvim_win_set_cursor(0, { r + #lines - 1, c + #lines[#lines] })
 end
 
---- Extract number and paragraph flag
+--- Extract number and paragraph flag, expects a trailing space as trigger
 ---@param line string
 ---@return integer?, string?
 local function extract_num_fmt(line)
-  -- match "lorem" + digits + optional "p" at end of line
-  local num_str, p = line:match("lorem(%d+)(p?)$")
-  -- only convert the digits to a number
+  local num_str, p = line:match("lorem(%d+)(p?) $")
   local num = tonumber(num_str)
   return num, p
 end
@@ -263,22 +208,25 @@ local function valid_num(n)
   return true
 end
 
---- Replace trigger text with generated
+--- Replace trigger text (including the trailing space) with generated text
 ---@param line string
 ---@param row integer
 ---@param txt string
 ---@return nil
 local function replace_trigger(line, row, txt)
-  local s, e = line:find("lorem%d+p?$")
-  if s then api.nvim_buf_set_text(0, row-1, s-1, row-1, e, vim.split(txt, "\n")) end
+  local s, e = line:find("lorem%d+p? ")
+  if not s then return end
+  local lines = vim.split(txt, "\n")
+  api.nvim_buf_set_text(0, row - 1, s - 1, row - 1, e, lines)
+  api.nvim_win_set_cursor(0, { row + #lines - 1, #lines[#lines] })
 end
 
 --- Handle inline lorem trigger
 ---@return nil
 local function on_keyword()
   local line = api.nvim_get_current_line()
-  local row  = api.nvim_win_get_cursor(0)[1]
-  local num, p = extract_num_fmt(line)
+  local row, col = unpack(api.nvim_win_get_cursor(0))
+  local num, p = extract_num_fmt(line:sub(1, col))
   if not num or not valid_num(num) then return end
   local txt = (p == "p") and M.paragraphs(num) or M.words(num)
   replace_trigger(line, row, txt)
@@ -314,38 +262,12 @@ end, { nargs = "+", complete = format_completion })
 -- ┏━━━━━━━━━━━━━━━━━┓
 -- ┃  Autocmd Setup  ┃
 -- ┗━━━━━━━━━━━━━━━━━┛
----@type userdata|nil
-local debounce_timer
 
---- Clear any existing timer
----@return nil
-local function clear_timer()
-  if debounce_timer then debounce_timer:stop(); debounce_timer:close() end
-  debounce_timer = nil
-end
-
---- Get current inline trigger context
----@return integer?, string?
-local function current_fmt()
-  local _, c = unpack(api.nvim_win_get_cursor(0))
-  local pre  = api.nvim_get_current_line():sub(1, c)
-  return extract_num_fmt(pre)
-end
-
---- Debounced keyword trigger on insert
+-- Watches for lorem<n>[p]<space> in insert mode and expands it in place.
+api.nvim_create_augroup("LoremIpsum", { clear = true })
 api.nvim_create_autocmd("TextChangedI", {
-  callback = function()
-    local n, f = current_fmt()
-    if not n then return end
-    clear_timer()
-    local nn, ff = n, f
-    debounce_timer = uv.new_timer()
-    debounce_timer:start(_config.debounce_ms, 0, vim.schedule_wrap(function()
-      if current_fmt() == nn then on_keyword() end
-      clear_timer()
-    end))
-  end,
+  group = "LoremIpsum",
+  callback = on_keyword,
 })
 
 return M
-
