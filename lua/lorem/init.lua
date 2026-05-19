@@ -96,14 +96,15 @@ local function capitalize(word)
   return word:sub(1, 1):upper() .. word:sub(2)
 end
 
+local completion_choices = { words = { "10", "20", "50", "100" }, paragraphs = { "1", "2", "3", "5" } }
+
 --- Provide completion for :LoremIpsum
 ---@param arg_lead string
 ---@param cmd_line string
 ---@return string[]
 local function format_completion(arg_lead, cmd_line)
-  local choices = { words = { "10", "20", "50", "100" }, paragraphs = { "1", "2", "3", "5" } }
   local parts = vim.split(cmd_line, "%s+")
-  local pool = (#parts == 2) and { "words", "paragraphs" } or (#parts == 3) and (choices[parts[2]] or {}) or {}
+  local pool = (#parts == 2) and { "words", "paragraphs" } or (#parts == 3) and (completion_choices[parts[2]] or {}) or {}
   return vim.tbl_filter(function(o) return vim.startswith(o, arg_lead) end, pool)
 end
 M._complete = format_completion
