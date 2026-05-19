@@ -41,11 +41,13 @@ local M = {}
 --- Merge user options
 ---@param user_config LoremConfig?  # partial override
 ---@return nil
-function M.opts(user_config)
+function M.setup(user_config)
   if user_config then
     _config = vim.tbl_deep_extend("force", _config, user_config)
   end
 end
+
+M.opts = M.setup
 
 local generate_text
 
@@ -105,6 +107,7 @@ local function format_completion(arg_lead, cmd_line)
   local pool = (#parts == 2) and { "words", "paragraphs" } or (#parts == 3) and (choices[parts[2]] or {}) or {}
   return vim.tbl_filter(function(o) return vim.startswith(o, arg_lead) end, pool)
 end
+M._complete = format_completion
 
 -- ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
 -- ┃  Core Text Generation  ┃
@@ -257,7 +260,7 @@ api.nvim_create_user_command("LoremIpsum", function(opts)
     local fn = (a[1] == "paragraphs") and M.paragraphs or M.words
     insert_text(fn(tonumber(a[2])))
   end
-end, { nargs = "+", complete = format_completion })
+end, { nargs = "+", complete = "customlist,v:lua.require'lorem'._complete" })
 
 -- ┏━━━━━━━━━━━━━━━━━┓
 -- ┃  Autocmd Setup  ┃
