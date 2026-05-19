@@ -32,19 +32,14 @@
       packages.default = loremNvim;
 
       devShells.default = pkgs.mkShell {
-        buildInputs = [
-          pkgs.neovim
-          pkgs.stylua
-          pkgs.luajitPackages.luacheck
-          pkgs.lua-language-server
-          pkgs.git
+        buildInputs = with pkgs; [
+          neovim
+          stylua
+          luajitPackages.luacheck
+          lua-language-server
+          git
           nvimDev
         ];
-      };
-
-      apps.default = {
-        type = "app";
-        program = "${nvimDev}/bin/nvim-lorem";
       };
 
     });
