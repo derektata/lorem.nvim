@@ -75,7 +75,7 @@ function M.ipsum(args)
   local parts = vim.split(args, "%s+")
   return generate_text({
     format          = parts[1],
-    amount          = tonumber(parts[2]) or _config.format_defaults.medium.s_per_paragraph,
+    amount          = tonumber(parts[2]),
     w_per_sentence  = tonumber(parts[3]) or _config.format_defaults.medium.w_per_sentence,
     s_per_paragraph = tonumber(parts[4]) or _config.format_defaults.medium.s_per_paragraph,
   })
