@@ -229,6 +229,7 @@ end
 ---@return nil
 local function on_keyword()
   local line = api.nvim_get_current_line()
+  if not line:find("lorem%d", 1, false) then return end
   local row, col = unpack(api.nvim_win_get_cursor(0))
   local num, p = extract_num_fmt(line:sub(1, col))
   if not num or not valid_num(num) then return end
