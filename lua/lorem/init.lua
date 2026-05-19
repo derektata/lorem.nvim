@@ -9,8 +9,7 @@
 
 local api = vim.api
 
-math.randomseed(os.time())
-math.random()
+math.randomseed(vim.uv.hrtime())
 ---@type string[]
 local words = require "lorem.ipsum"
 
