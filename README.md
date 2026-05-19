@@ -29,7 +29,7 @@ extraPlugins = [
 
 Then configure as usual in either case:
 ```lua
-require("lorem").opts {
+require("lorem").setup {
   sentence_length = "mixed",
   comma_chance = 0.3,
   max_commas = 2,
@@ -39,29 +39,12 @@ require("lorem").opts {
 ### vim.pack (built-in, Neovim 0.11+):
 
 ```lua
-vim.pack.add({
-  { src = 'https://github.com/derektata/lorem.nvim' },
-})
+vim.pack.add { 'https://github.com/derektata/lorem.nvim' }
 
-require("lorem").opts {
+require('lorem').setup {
   sentence_length = "mixed",
   comma_chance = 0.3,
   max_commas = 2,
-}
-```
-
-### Packer:
-
-```lua
-use {
-  'derektata/lorem.nvim',
-  config = function()
-    require("lorem").opts {
-      sentence_length = "mixed", -- using a default configuration
-      comma_chance = 0.3,        -- 30% chance to insert a comma
-      max_commas = 2,            -- maximum 2 commas per sentence
-    }
-  end
 }
 ```
 
@@ -70,13 +53,11 @@ use {
 ```lua
 return {
   'derektata/lorem.nvim',
-  config = function()
-    require("lorem").opts {
-      sentence_length = "mixed", -- using a default configuration
-      comma_chance = 0.3,        -- 30% chance to insert a comma
-      max_commas = 2,            -- maximum 2 commas per sentence
-    }
-  end
+  opts = {
+    sentence_length = "mixed", -- using a default configuration
+    comma_chance = 0.3,        -- 30% chance to insert a comma
+    max_commas = 2,            -- maximum 2 commas per sentence
+  },
 }
 ```
 
@@ -85,7 +66,7 @@ return {
 The plugin is designed to be as plug-and-play as possible, and therefore no setup is needed as it is shipped with sensible defaults. It is however possible to customize the behavior of the plugin like this:
 
 ```lua
-require('lorem').opts {
+require('lorem').setup {
     sentence_length = "mixed", -- using a default configuration
     comma_chance = 0.3,        -- 30% chance to insert a comma
     max_commas = 2,            -- maximum 2 commas per sentence
@@ -93,7 +74,7 @@ require('lorem').opts {
 
 -- or
 
-require('lorem').opts {
+require('lorem').setup {
     sentence_length = { -- custom configuration
       w_per_sentence = 8,
       s_per_paragraph = 6
