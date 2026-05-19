@@ -221,7 +221,8 @@ local function replace_trigger(line, row, txt)
   if not s then return end
   local lines = vim.split(txt, "\n")
   api.nvim_buf_set_text(0, row - 1, s - 1, row - 1, e, lines)
-  api.nvim_win_set_cursor(0, { row + #lines - 1, #lines[#lines] })
+  local col = (#lines == 1) and (s - 1 + #lines[1]) or #lines[#lines]
+  api.nvim_win_set_cursor(0, { row + #lines - 1, col })
 end
 
 --- Handle inline lorem trigger
